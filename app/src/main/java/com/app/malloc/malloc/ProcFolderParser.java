@@ -1,13 +1,15 @@
-package com.app.malloc.malloc.data;
+package ca.uwaterloo.usmmonitor;
 
 import android.app.ActivityManager;
 import android.app.IntentService;
 import android.content.Intent;
 import android.os.Debug;
-import 	androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.util.Log;
 
-import org.apache.commons.lang3.ArrayUtils;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+
+import com.app.malloc.malloc.ui.AppProcess;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
