@@ -5,6 +5,10 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context="ui.DetailActivity">
+    <TextView
+        android:id="@+id/pid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -46,6 +50,13 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/open"
             android:layout_alignStart="@+id/time"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/memory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/data"
             android:textSize="13sp" />
 
         <Button

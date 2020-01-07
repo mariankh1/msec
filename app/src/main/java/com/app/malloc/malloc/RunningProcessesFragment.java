@@ -1,4 +1,4 @@
-package ca.uwaterloo.usmmonitor;
+package com.app.malloc.malloc;
 
 import android.annotation.TargetApi;
 import android.app.usage.UsageStats;
@@ -12,10 +12,7 @@ import android.icu.util.Calendar;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.widget.RecyclerView;
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -25,12 +22,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.app.malloc.malloc.data.AppItem;
+import com.app.malloc.malloc.data.AppStats;
+import com.app.malloc.malloc.synchronization.SyncUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
-import ca.uwaterloo.usmmonitor.synchronization.SyncUtils;
 
 
 /**
@@ -43,7 +47,7 @@ public class RunningProcessesFragment extends Fragment {
     private ListAdapter mListAdapter;
     private RecyclerView mRecyclerView;
     RecyclerView.LayoutManager mLayoutManager;
-    private List<AppStats> mAppStatsList;
+    private List<AppItem> mAppStatsList;
     private PackageManager mPackageManager;
     /**
      * Options menu used to populate ActionBar.
@@ -82,7 +86,7 @@ public class RunningProcessesFragment extends Fragment {
     private void parseInfo(String processInfo) {
         // fields = [pid], [packageName], [mem usage in KB], [mem usage in %], [cpu usage]
         String[] fields = processInfo.split(ProcFolderParser.DELIMITER);
-        AppStats appStats = new AppStats();
+        AppItem appStats = new AppItem();
         appStats.pid = fields[0];
         appStats.packageName = fields[1];
         appStats.memUsageKB = fields[2];
@@ -93,7 +97,7 @@ public class RunningProcessesFragment extends Fragment {
             appStats.appLabel = mPackageManager.getApplicationLabel(mPackageManager.getApplicationInfo(appStats.packageName, 0)).toString();
         } catch (PackageManager.NameNotFoundException e) {
 //            Log.d(LOG_TAG, String.format("App Icon is not found for %s, use default icon.", appStats.packageName));
-            appStats.appIcon = getActivity().getDrawable(R.mipmap.ic_default_app_launcher);
+            appStats.appIcon = getActivity().getDrawable(R.mipmap.ic_launcher);
         }
         mAppStatsList.add(appStats);
     }
@@ -237,7 +241,7 @@ public class RunningProcessesFragment extends Fragment {
         mAppStatsList = new ArrayList<>();
         PackageManager packageManager = getContext().getPackageManager();
         for (int i = 0; i < usageStatsList.size(); i++) {
-            AppStats appStats = new AppStats();
+            AppItem appStats = new AppItem();
             appStats.usageStats = usageStatsList.get(i);
             if (appStats.usageStats.getLastTimeUsed() == 0) continue;
             try {
@@ -245,7 +249,7 @@ public class RunningProcessesFragment extends Fragment {
                 appStats.appLabel = packageManager.getApplicationLabel(packageManager.getApplicationInfo(appStats.usageStats.getPackageName(), 0)).toString();
             } catch (PackageManager.NameNotFoundException e) {
                 Log.w(LOG_TAG, String.format("App Icon is not found for %s, use default icon.", appStats.usageStats.getPackageName()));
-                appStats.appIcon = getActivity().getDrawable(R.mipmap.ic_default_app_launcher);
+                appStats.appIcon = getActivity().getDrawable(R.mipmap.ic_launcher);
             }
 //            Log.d(LOG_TAG, appStats.usageStats.getPackageName() + ": \n LastTimeStamp =" + new Date(appStats.usageStats.getLastTimeStamp()) + "\n LastTimeUsed = " + new Date(appStats.usageStats.getLastTimeUsed()) + "\n FirstTimeStamp = " + new Date(appStats.usageStats.getFirstTimeStamp()));
             mAppStatsList.add(appStats);
@@ -264,9 +268,9 @@ public class RunningProcessesFragment extends Fragment {
      * The {@link Comparator} to sort a collection of {@link UsageStats} sorted by the timestamp
      * last time the app was used in the descendant order.
      */
-    private static class LastTimeUsedComparator implements Comparator<AppStats> {
+    private static class LastTimeUsedComparator implements Comparator<AppItem> {
         @Override
-        public int compare(AppStats o1, AppStats o2) {
+        public int compare(AppItem o1, AppItem o2) {
             return Float.compare(Float.parseFloat(o2.cpuUsage), Float.parseFloat(o1.cpuUsage));
         }
     }

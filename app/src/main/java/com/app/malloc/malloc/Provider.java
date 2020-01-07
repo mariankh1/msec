@@ -1,4 +1,4 @@
-package ca.uwaterloo.usmmonitor;
+package com.app.malloc.malloc;
 
 import android.content.ContentProvider;
 import android.content.ContentUris;
@@ -8,8 +8,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 
-import ca.uwaterloo.usmmonitor.database.ProcessInfoContract;
-import ca.uwaterloo.usmmonitor.database.ProcessInfoDbHelper;
+import com.app.malloc.malloc.db.ProcessInfoContract;
+import com.app.malloc.malloc.db.ProcessInfoDbHelper;
+
 
 /**
  * Created by liuyangren on 11/9/17.

@@ -51,4 +51,6 @@
     <string name="version">v %1$s</string>
 
     <string name="wifi_data">WiFi:%1$s · Mobile:%2$s</string>
+    <string name="explaination_permission_to_grant">Please enable permissions</string>
+    <string name="description_refresh">refresh</string>
 </resources>

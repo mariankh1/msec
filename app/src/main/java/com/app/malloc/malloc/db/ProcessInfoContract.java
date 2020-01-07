@@ -10,7 +10,7 @@ import android.provider.BaseColumns;
 
 public class ProcessInfoContract {
     // content provider information
-    public static final String CONTENT_AUTHORITY = "ca.uwaterloo.usmmonitor.provider";
+    public static final String CONTENT_AUTHORITY = "com.app.malloc.malloc";
     static final Uri BASE_CONTENT_URI = Uri.parse("content://" + CONTENT_AUTHORITY);
     static final String PATH_ENTRIES = "processes";
 

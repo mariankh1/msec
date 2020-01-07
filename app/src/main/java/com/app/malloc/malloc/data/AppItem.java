@@ -28,6 +28,7 @@ public class AppItem {
     public String memUsageKB;
     public String memUsagePercent;
     public String pid;
+    public String packageName;
 
 
     @Override
@@ -41,12 +42,19 @@ public class AppItem {
         AppItem newItem = new AppItem();
         newItem.mName = this.mName;
         newItem.mPackageName = this.mPackageName;
+        newItem.packageName = this.packageName;
         newItem.mEventTime = this.mEventTime;
         newItem.mUsageTime = this.mUsageTime;
         newItem.mEventType = this.mEventType;
         newItem.mIsSystem = this.mIsSystem;
         newItem.mCount = this.mCount;
         newItem.mMemory = this.mMemory;
+        newItem.usageStats = this.usageStats;
+        newItem.appIcon = this.appIcon;
+        newItem.appLabel = this.appLabel;
+        newItem.cpuUsage = this.cpuUsage;
+        newItem.memUsageKB = this.memUsageKB;
+
         return newItem;
     }
 }

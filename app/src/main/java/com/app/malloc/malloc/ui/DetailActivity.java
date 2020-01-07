@@ -6,6 +6,8 @@ import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.media.MediaRecorder;
 import 	android.os.RemoteException;
+
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import android.annotation.SuppressLint;
 import android.app.usage.NetworkStats;
@@ -34,6 +36,7 @@ import android.text.TextUtils;
 import android.transition.Explode;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -51,6 +54,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.app.malloc.malloc.data.AppStats;
 import com.app.malloc.malloc.db.ProcessInfoContract;
 import com.app.malloc.malloc.db.ProcessInfoDbHelper;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
@@ -73,13 +77,14 @@ import com.app.malloc.malloc.util.AppUtil;
 import com.app.malloc.malloc.util.BitmapUtil;
 import com.app.malloc.malloc.util.SortEnum;
 
-import static com.app.malloc.malloc.data.ProcFolderParser.formatter;
+import static com.app.malloc.malloc.ProcFolderParser.formatter;
+
 
 public class DetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_PACKAGE_NAME = "package_name";
     public static final String EXTRA_DAY = "day";
-
+    private static List<AppItem> mAppStatList = new ArrayList<>();
     private MyAdapter mAdapter;
     private TextView mTime;
     private String mPackageName;
@@ -98,15 +103,19 @@ public class DetailActivity extends AppCompatActivity {
     // activity manager is needed to kill background processes associated with a package
     private ActivityManager am;
 
+
+    /*
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
-        getWindow().setExitTransition(new Explode());
+      //  getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+      //  getWindow().setExitTransition(new Explode());
         setContentView(R.layout.activity_detail);
-      //  pidTextView = (TextView) findViewById(R.id.pid);
-      //  Button killButton = (Button) findViewById(R.id.kill_button);
-        parsingIntent(getIntent());
+        pidTextView = (TextView) findViewById(R.id.pid);
+      // Button killButton = (Button) findViewById(R.id.kill_button);
+        Intent intent = getIntent();
+        if (intent != null) {
+          parsingIntent(intent);
         // Create a DB helper (this will create the DB if run for the first time)
         mDbHelper = new ProcessInfoDbHelper(this);
         // Keep a reference to the mDb until this activity is paused. Get a writable database
@@ -122,8 +131,7 @@ public class DetailActivity extends AppCompatActivity {
             actionBar.setTitle(R.string.detail);
         }
 
-        Intent intent = getIntent();
-        if (intent != null) {
+
             mPackageName = intent.getStringExtra(EXTRA_PACKAGE_NAME);
             mDay = intent.getIntExtra(EXTRA_DAY, 0);
             // package name
@@ -198,7 +206,27 @@ public class DetailActivity extends AppCompatActivity {
             });
         }
     }
+*/
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_detail);
 
+        pidTextView = (TextView) findViewById(R.id.pid);
+
+     //   Button killButton = (Button) findViewById(R.id.kill_button);
+        parsingIntent(getIntent());
+        // Create a DB helper (this will create the DB if run for the first time)
+        mDbHelper = new ProcessInfoDbHelper(this);
+        // Keep a reference to the mDb until this activity is paused. Get a writable database
+        // because the process info will be added to DB once user click the "killButton".
+        mDb = mDbHelper.getWritableDatabase();
+        am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+
+
+
+
+    }
     /**
      * This method is called when user clicks on the "Kill This Process" button.
      * First save the data into database and then kill the corresponding process.
@@ -223,7 +251,10 @@ public class DetailActivity extends AppCompatActivity {
      * @param intent The intent starting this "detail" activity.
      */
     private void parsingIntent(Intent intent){
-        pid = Integer.parseInt(intent.getStringExtra(ListAdapter.PID));
+        Log.d("test" ,"" + ListAdapter.PID);
+        Log.d("test" ,"" + intent);
+      /*  pid = 1;// Integer.parseInt(intent.getStringExtra(ListAdapter.PID));
+
         pidTextView.setText("PID = " + pid);
         packageName = intent.getStringExtra(ProcessInfoContract.ProcessInfoEntry.COLUME_PACKAGE_NAME);
         cpuUsage = Float.parseFloat(intent.getStringExtra(ProcessInfoContract.ProcessInfoEntry.COLUME_CPU_USAGE));
@@ -233,7 +264,7 @@ public class DetailActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         memoryUsagePercent = Float.parseFloat(intent.getStringExtra(ProcessInfoContract.ProcessInfoEntry.COLUME_MEMORY_USAGE_PERCENT));
-
+*/
     }
 
     @Override
@@ -302,41 +333,47 @@ public class DetailActivity extends AppCompatActivity {
         return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
     }
 
-    class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
+    class MyAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
 
         private List<AppItem> mData;
+        public static final String PID = "pid";
+
 
         MyAdapter() {
             mData = new ArrayList<AppItem>();
         }
 
+        @NonNull
+        @Override
+        public ListAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.row, parent, false);
+            return new ListAdapter.ViewHolder(v);
+        }
+
         void setData(List<AppItem> data) {
             mData = data;
+            mAppStatList = data;
             notifyDataSetChanged();
 
         }
 
-        @NonNull
-        @Override
-        public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = getLayoutInflater().inflate(R.layout.row, parent, false);
-            return new MyViewHolder(view);
-        }
 
         @Override
-        public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-            AppItem item = mData.get(position);
-            String desc = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()).format(new Date(item.mEventTime));
-            if (item.mEventType == UsageEvents.Event.MOVE_TO_BACKGROUND) {
-                holder.mLayout.setPadding(dpToPx(16), 0, dpToPx(16), dpToPx(4));
-            } else if (item.mEventType == -1) {
-                holder.mLayout.setPadding(dpToPx(16), dpToPx(4), dpToPx(16), dpToPx(4));
-                desc = AppUtil.formatMilliSeconds(item.mUsageTime);
-            } else if (item.mEventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
-                holder.mLayout.setPadding(dpToPx(16), dpToPx(12), dpToPx(16), 0);
-            }
-            holder.mEvent.setText(String.format("%s %s", getPrefix(item.mEventType), desc));
+        public void onBindViewHolder(@NonNull ListAdapter.ViewHolder holder, int position) {
+            holder.getAppLabel().setText(mAppStatList.get(position).appLabel);
+
+            holder.getPackageName().setText(mAppStatList.get(position).packageName);
+            holder.getmCpuUsage().setText("CPU: " + mAppStatList.get(position).cpuUsage + "%");
+            holder.getmMemUsage().setText("Memory: " + mAppStatList.get(position).memUsageKB + "KB, " + mAppStatList.get(position).memUsagePercent + "%");
+//        long lastTimeUsed = mAppStatList.get(position).usageStats.getLastTimeUsed();
+              //  holder.getLastTimeUsed().setText(mDataFormat.format(new Date(lastTimeUsed)));
+            holder.getAppIcon().setImageDrawable(mData.get(position).appIcon);
+            holder.setPid(mAppStatList.get(position).pid);
+            holder.setmCpuUsageString(mAppStatList.get(position).cpuUsage);
+            holder.setmMemoryUsageKbString(mAppStatList.get(position).memUsageKB);
+            holder.setmMemoryUsagePercentString(mAppStatList.get(position).memUsagePercent);
         }
+
 
         private String getPrefix(int event) {
             switch (event) {
@@ -348,6 +385,26 @@ public class DetailActivity extends AppCompatActivity {
                     return "┣  ";
             }
         }
+        /*@Override
+        public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
+
+            AppItem item = mData.get(position);
+            String desc = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()).format(new Date(item.mEventTime));
+            if (item.mEventType == UsageEvents.Event.MOVE_TO_BACKGROUND) {
+             //  holder.mLayout.setPadding(dpToPx(16), 0, dpToPx(16), dpToPx(4));
+            } else if (item.mEventType == -1) {
+              //  holder.mLayout.setPadding(dpToPx(16), dpToPx(4), dpToPx(16), dpToPx(4));
+                desc = AppUtil.formatMilliSeconds(item.mUsageTime);
+            } else if (item.mEventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+            //  holder.mLayout.setPadding(dpToPx(16), dpToPx(12), dpToPx(16), 0);
+            }
+            setContentView(R.layout.item_list);
+            holder.mEvent= (TextView) findViewById(R.id.event);
+            Log.d("test" ,"" + holder.mEvent);
+            holder.mEvent.setText(String.format("%s %s", getPrefix(item.mEventType), desc));
+        }
+*/
+
 
         @Override
         public int getItemCount() {
@@ -362,6 +419,7 @@ public class DetailActivity extends AppCompatActivity {
 
             MyViewHolder(View itemView) {
                 super(itemView);
+
                 mEvent = itemView.findViewById(R.id.event);
                 mSign = itemView.findViewById(R.id.sign);
                 mLayout = itemView.findViewById(R.id.layout);
@@ -483,5 +541,7 @@ public class DetailActivity extends AppCompatActivity {
         }
 
     }
+
+
 }
 

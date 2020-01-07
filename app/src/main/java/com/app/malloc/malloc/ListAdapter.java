@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.app.malloc.malloc.data.AppItem;
 import com.app.malloc.malloc.data.AppStats;
 import com.app.malloc.malloc.db.ProcessInfoContract;
 import com.app.malloc.malloc.ui.DetailActivity;
@@ -21,8 +22,8 @@ import java.util.List;
  * Provide views to RecyclerView with the directory entries.
  */
 public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
-    public static final String PID = "pid";
-    private static List<AppStats> mAppStatList = new ArrayList<>();
+    public static final String PID = "1";
+    public static List<AppItem> mAppStatList = new ArrayList<>();
 
     public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         private final TextView mAppLabel;
@@ -115,6 +116,7 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
+
         holder.getAppLabel().setText(mAppStatList.get(position).appLabel);
         holder.getPackageName().setText(mAppStatList.get(position).packageName);
         holder.getmCpuUsage().setText("CPU: " + mAppStatList.get(position).cpuUsage + "%");
@@ -133,7 +135,7 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
         return mAppStatList.size();
     }
 
-    public void setAppStatList(List<AppStats> appStatsList) {
+    public void setAppStatList(List<AppItem> appStatsList) {
         mAppStatList = appStatsList;
     }
 }

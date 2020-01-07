@@ -1,5 +1,7 @@
 package com.app.malloc.malloc.ui;
 
+import com.app.malloc.malloc.ProcFolderParser;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;

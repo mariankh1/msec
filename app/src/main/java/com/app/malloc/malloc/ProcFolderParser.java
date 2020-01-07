@@ -1,15 +1,20 @@
-package ca.uwaterloo.usmmonitor;
+package com.app.malloc.malloc;
 
+import android.Manifest;
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.IntentService;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Debug;
 import android.util.Log;
 
+import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-
 import com.app.malloc.malloc.ui.AppProcess;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,7 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -58,6 +62,7 @@ public class ProcFolderParser extends IntentService {
     private long totalTime = 1, busyTime = 1, totalTimeLast = 0, busyTimeLast = 0;
     public static final String DELIMITER = "#";
     private int[] keysArray;
+    private static final int REQUEST_EXTERNAL_STORAGE = 1;
 
 
     // TODO: Rename actions, choose action names that describe tasks that this
@@ -71,7 +76,7 @@ public class ProcFolderParser extends IntentService {
 
     public ProcFolderParser() {
         super("ProcFolderParser");
-//        getUserHz();
+//      getUserHz();
 //        getCpuNumber();
     }
 
@@ -105,6 +110,7 @@ public class ProcFolderParser extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+
         activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
         activityManager.getMemoryInfo(generalMem);
         // right shift by 10 bits, convert to KB, this is used by AppProcess.java
@@ -170,6 +176,7 @@ public class ProcFolderParser extends IntentService {
         try {
             reader = new BufferedReader(new FileReader("/proc/stat"));
             fields = reader.readLine().split("[ ]+");
+            Log.d("reading", "reading.. "+fields.toString());
             this.busyTime = Long.parseLong(fields[1]) + Long.parseLong(fields[2]) + Long.parseLong(fields[3]) + Long.parseLong(fields[6]) + Long.parseLong(fields[7]) + Long.parseLong(fields[8]);
             this.totalTime = this.busyTime + Long.parseLong(fields[4]) + Long.parseLong(fields[5]);
         }  catch (IOException e) {

@@ -1,6 +1,8 @@
 package com.app.malloc.malloc.ui;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,6 +13,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+
+import androidx.core.app.ActivityCompat;
 import 	androidx.core.app.ActivityOptionsCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,7 +23,7 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import 	androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
+import android.widget.TextView;
 import android.transition.Fade;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -42,10 +46,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.app.malloc.malloc.GlideApp;
+import com.app.malloc.malloc.ListAdapter;
+import com.app.malloc.malloc.ProcFolderParser;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 
-import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -87,11 +92,47 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String[] generalInfo = intent.getStringExtra("cpuMem").split(ProcFolderParser.DELIMITER);
-//            Log.d(LOG_TAG, "received cpu  = " + generalInfo[0]);
-            mGenralCpuUsage.setText("Total CPU usage: " + generalInfo[0] + "%");
+            Log.d(LOG_TAG, "received cpu  = " + generalInfo[0]);
+          //  mGenralCpuUsage.setText("Total CPU usage: " + generalInfo[0] + "%");
             mAvailMem.setText("Available Memory: " + generalInfo[1] + "KB, " + generalInfo[2] + "%");
         }
     };
+    Boolean PermissionGranted = false;
+    private static final int REQUEST_EXTERNAL_STORAGE = 1;
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+    public  void verifyStoragePermissions(Activity activity) {
+        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                    activity,
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
+        }else{
+            PermissionGranted = true;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String permissions[],
+            int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode,permissions,grantResults);
+        if (grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            PermissionGranted = true;
+            System.out.println("P granted");
+        } else {
+            PermissionGranted = false;
+            System.out.println("P not granted");
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,58 +141,62 @@ public class MainActivity extends AppCompatActivity {
         getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
         getWindow().setExitTransition(new Fade(Fade.OUT));
         setContentView(R.layout.activity_main);
-        mPackageManager = getPackageManager();
 
-        mSort = findViewById(R.id.sort_group);
-        mSortName = findViewById(R.id.sort_name);
-        mSwitch = findViewById(R.id.enable_switch);
-        mSwitchText = findViewById(R.id.enable_text);
-        mAdapter = new MyAdapter();
-        mMicrophone = findViewById(R.id.microphone);
-        if(getMicrophoneAvailable()) {
-            mMicrophone.setText(R.string.microphoneON);
-        }
-        else
-            mMicrophone.setText(R.string.microphoneOFF);
-        mList = findViewById(R.id.list);
-        mList.setLayoutManager(new LinearLayoutManager(this));
-        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(mList.getContext(), DividerItemDecoration.VERTICAL);
-        dividerItemDecoration.setDrawable(getResources().getDrawable(R.drawable.divider, getTheme()));
-        mList.addItemDecoration(dividerItemDecoration);
-        mList.setAdapter(mAdapter);
+        verifyStoragePermissions(this);
 
-        initLayout();
-        initEvents();
-        initSpinner();
-        initSort();
+            mPackageManager = getPackageManager();
 
-        if (DataManager.getInstance().hasPermission(getApplicationContext())) {
-            process();
-            startService(new Intent(this, AlarmService.class));
-        }
+            mSort = findViewById(R.id.sort_group);
+            mSortName = findViewById(R.id.sort_name);
+            mSwitch = findViewById(R.id.enable_switch);
+            mSwitchText = findViewById(R.id.enable_text);
+            mAdapter = new MyAdapter();
+            mMicrophone = findViewById(R.id.microphone);
+            if (getMicrophoneAvailable()) {
+                mMicrophone.setText(R.string.microphoneON);
+            } else
+                mMicrophone.setText(R.string.microphoneOFF);
+            mAvailMem = findViewById(R.id.avail_mem);
+            //mGenralCpuUsage = findViewById(R.id.general_cpu);
+            mTotalMem =  findViewById(R.id.total_mem);
+            mList = findViewById(R.id.list);
+            mList.setLayoutManager(new LinearLayoutManager(this));
+            DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(mList.getContext(), DividerItemDecoration.VERTICAL);
+            dividerItemDecoration.setDrawable(getResources().getDrawable(R.drawable.divider, getTheme()));
+            mList.addItemDecoration(dividerItemDecoration);
+            mList.setAdapter(mAdapter);
 
-      //  if (savedInstanceState == null){
-     //       getSupportFragmentManager().beginTransaction()
-     //               .add(R.id.container, RunningProcessesFragment.newInstance())
-     //               .commit();
-     //   }
-        // Start the Parser service to get CPU and Memory info from /proc folder
-        Intent intent = new Intent(this, ProcFolderParser.class);
-        startService(intent);
-        // find all UI widgets
-     //   mTotalMem = (TextView) findViewById(R.id.total_mem);
-     //   mAvailMem = (TextView) findViewById(R.id.avail_mem);
-     //   mGenralCpuUsage = (TextView) findViewById(R.id.general_cpu);
+            initLayout();
+            initEvents();
+            initSpinner();
+            initSort();
 
-        // set text for total memory and threshold, because they are constant and we don't need
-        ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-        ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
-        am.getMemoryInfo(memInfo);
-      //  mTotalMem.setText("Total memory: " + formater.format(memInfo.totalMem >> 10) + "KB   Threshold: "
-      //          + formater.format(memInfo.threshold >> 10) + "KB");
+            if (DataManager.getInstance().hasPermission(getApplicationContext())) {
+                process();
+                startService(new Intent(this, AlarmService.class));
+            }
+
+            if (savedInstanceState == null) {
+                // getSupportFragmentManager().beginTransaction()
+                //          .add(R.id.container, RunningProcessesFragment.newInstance())
+                //          .commit();
+            }
+            // Start the Parser service to get CPU and Memory info from /proc folder
+            Intent intent = new Intent(this, ProcFolderParser.class);
+            startService(intent);
+            // find all UI widgets
+
+
+
+            // set text for total memory and threshold, because they are constant and we don't need
+            ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
+            am.getMemoryInfo(memInfo);
+            mTotalMem.setText("Total memory: " + formater.format(memInfo.totalMem >> 10) + "KB   Threshold: "
+                     + formater.format(memInfo.threshold >> 10) + "KB");
+
 
     }
-
     private void initLayout() {
         mSwipe = findViewById(R.id.swipe_refresh);
         if (DataManager.getInstance().hasPermission(getApplicationContext())) {
@@ -246,11 +291,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (!DataManager.getInstance().hasPermission(getApplicationContext())) {
-            mSwitch.setChecked(false);
+        //    mSwitch.setChecked(false);
         }
         LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, new IntentFilter("general"));
 
 
+    }
+
+    @Override
+    protected void onPause() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mReceiver);
+        super.onPause();
     }
 
     @Override
@@ -342,10 +393,12 @@ public class MainActivity extends AppCompatActivity {
         MyAdapter() {
             super();
             mData = new ArrayList<AppItem>();
+
         }
 
         void updateData(List<AppItem> data) {
             mData = data;
+
             notifyDataSetChanged();
         }
 
@@ -374,6 +427,10 @@ public class MainActivity extends AppCompatActivity {
                     getResources().getString(R.string.times_only))
             );
             holder.mDataUsage.setText(String.format(Locale.getDefault(), "%s", AppUtil.humanReadableByteCount(item.mMobile)));
+
+            holder.mMemoryUsage.setText(String.format(Locale.getDefault(), "%s", AppUtil.humanReadableByteCount(item.mMemory)));
+
+
             if (mTotal > 0) {
                 holder.mProgress.setProgress((int) (item.mUsageTime * 100 / mTotal));
             } else {
@@ -398,6 +455,7 @@ public class MainActivity extends AppCompatActivity {
             private TextView mUsage;
             private TextView mTime;
             private TextView mDataUsage;
+            private TextView mMemoryUsage;
             private ImageView mIcon;
             private ProgressBar mProgress;
 
@@ -407,6 +465,7 @@ public class MainActivity extends AppCompatActivity {
                 mUsage = itemView.findViewById(R.id.app_usage);
                 mTime = itemView.findViewById(R.id.app_time);
                 mDataUsage = itemView.findViewById(R.id.app_data_usage);
+                mMemoryUsage= itemView.findViewById(R.id.app_mem_usage);
                 mIcon = itemView.findViewById(R.id.app_image);
                 mProgress = itemView.findViewById(R.id.progressBar);
                 itemView.setOnCreateContextMenuListener(this);

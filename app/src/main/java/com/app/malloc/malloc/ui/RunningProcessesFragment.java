@@ -20,7 +20,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -29,8 +28,9 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.app.malloc.malloc.ListAdapter;
+import com.app.malloc.malloc.ProcFolderParser;
 import com.app.malloc.malloc.R;
-import com.app.malloc.malloc.data.AppStats;
+import com.app.malloc.malloc.data.AppItem;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +49,7 @@ public class RunningProcessesFragment extends Fragment {
     private ListAdapter mListAdapter;
     private RecyclerView mRecyclerView;
     RecyclerView.LayoutManager mLayoutManager;
-    private List<AppStats> mAppStatsList;
+    private List<AppItem> mAppStatsList;
     private PackageManager mPackageManager;
     /**
      * Options menu used to populate ActionBar.
@@ -88,7 +88,7 @@ public class RunningProcessesFragment extends Fragment {
     private void parseInfo(String processInfo) {
         // fields = [pid], [packageName], [mem usage in KB], [mem usage in %], [cpu usage]
         String[] fields = processInfo.split(ProcFolderParser.DELIMITER);
-        AppStats appStats = new AppStats();
+        AppItem appStats = new AppItem();
         appStats.pid = fields[0];
         appStats.packageName = fields[1];
         appStats.memUsageKB = fields[2];
@@ -144,7 +144,7 @@ public class RunningProcessesFragment extends Fragment {
         mLayoutManager = mRecyclerView.getLayoutManager();
         mRecyclerView.scrollToPosition(0);
         mRecyclerView.setAdapter(mListAdapter);
-        mPackageManager = getContext().getPackageManager();
+        //mPackageManager = getContext().getPackageManager();
 
         List<UsageStats> usageStatsList = getAppStatistics();
         //Collections.sort(usageStatsList, new LastTimeUsedComparator());
@@ -245,7 +245,7 @@ public class RunningProcessesFragment extends Fragment {
         mAppStatsList = new ArrayList<>();
         PackageManager packageManager = getContext().getPackageManager();
         for (int i = 0; i < usageStatsList.size(); i++) {
-            AppStats appStats = new AppStats();
+            AppItem appStats = new AppItem();
             appStats.usageStats = usageStatsList.get(i);
             if (appStats.usageStats.getLastTimeUsed() == 0) continue;
             try {
@@ -271,9 +271,9 @@ public class RunningProcessesFragment extends Fragment {
      * The {@link Comparator} to sort a collection of {@link UsageStats} sorted by the timestamp
      * last time the app was used in the descendant order.
      */
-    private static class LastTimeUsedComparator implements Comparator<AppStats> {
+    private static class LastTimeUsedComparator implements Comparator<AppItem> {
         @Override
-        public int compare(AppStats o1, AppStats o2) {
+        public int compare(AppItem o1, AppItem o2) {
             return Float.compare(Float.parseFloat(o2.cpuUsage), Float.parseFloat(o1.cpuUsage));
         }
     }

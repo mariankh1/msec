@@ -64,5 +64,4 @@
         android:minHeight="4dp"
         android:progress="40"
         android:progressDrawable="@drawable/bg_progress" />
-
 </RelativeLayout>

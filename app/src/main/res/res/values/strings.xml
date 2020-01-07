@@ -2,12 +2,16 @@
 <resources>
     <string name="about">About</string>
     <string name="app_name">Malloc</string>
-
+    <string name="explaination_permission_to_grant">Failed to retrieve app usage
+        statistics. You may need to enable access
+        for this app through Settings > Security > Apps with usage access
+    </string>
+    <string name="description_refresh">Refresh</string>
     <string name="close">Close</string>
 
     <string name="detail">Details</string>
     <string name="duration">Duration</string>
-
+    <string name="description_refresh">Refresh</string>
     <string name="enable_apps_monitor">Enable apps monitor</string>
     <string name="enable_apps_monitoring">Apps monitoring</string>
 
