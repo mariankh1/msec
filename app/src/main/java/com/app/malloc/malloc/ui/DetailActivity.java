@@ -80,6 +80,7 @@ import com.app.malloc.malloc.util.BitmapUtil;
 import com.app.malloc.malloc.util.SortEnum;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -474,6 +475,8 @@ public class DetailActivity extends AppCompatActivity {
                 }
 
             }
+
+
             return new Long[]{totalWifi, totalMobile};
         }
 
@@ -543,6 +546,7 @@ public class DetailActivity extends AppCompatActivity {
                 }
                 mTime.setText(String.format(getResources().getString(R.string.times), AppUtil.formatMilliSeconds(duration), appItems.get(appItems.size() - 1).mCount));
                 mAdapter.setData(newList);
+
             }
         }
 

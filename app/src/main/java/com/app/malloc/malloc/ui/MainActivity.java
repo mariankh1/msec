@@ -20,12 +20,12 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
-import 	androidx.core.app.ActivityOptionsCompat;
+import androidx.core.app.ActivityOptionsCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
-import 	androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -79,13 +79,18 @@ import com.app.malloc.malloc.service.AlarmService;
 import com.app.malloc.malloc.service.AppService;
 import com.app.malloc.malloc.util.AppUtil;
 import com.app.malloc.malloc.util.PreferenceManager;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 
-import 	android.media.MediaRecorder;
+import android.media.MediaRecorder;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -111,8 +116,8 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             String[] generalInfo = intent.getStringExtra("cpuMem").split(ProcFolderParser.DELIMITER);
             Log.d(LOG_TAG, "received cpu  = " + generalInfo[0]);
-          //  mGenralCpuUsage.setText("Total CPU usage: " + generalInfo[0] + "%");
-          //  mAvailMem.setText("Available Memory: " + generalInfo[1] + "KB, " + generalInfo[2] + "%");
+            //  mGenralCpuUsage.setText("Total CPU usage: " + generalInfo[0] + "%");
+            //  mAvailMem.setText("Available Memory: " + generalInfo[1] + "KB, " + generalInfo[2] + "%");
             mAvailMem.setText("Available Memory: " + generalInfo[1] + "KB");
         }
     };
@@ -122,7 +127,9 @@ public class MainActivity extends AppCompatActivity {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
-    public  void verifyStoragePermissions(Activity activity) {
+    private FirebaseAnalytics mFirebaseAnalytics;
+
+    public void verifyStoragePermissions(Activity activity) {
         int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
         if (permission != PackageManager.PERMISSION_GRANTED) {
@@ -132,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
                     PERMISSIONS_STORAGE,
                     REQUEST_EXTERNAL_STORAGE
             );
-        }else{
+        } else {
             PermissionGranted = true;
         }
     }
@@ -141,6 +148,25 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+          mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);;
+        FirebaseInstanceId.getInstance().getInstanceId()
+                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                        if (!task.isSuccessful()) {
+                            Log.w("firebase", "getInstanceId failed", task.getException());
+                            return;
+                        }
+
+                        // Get new Instance ID token
+                        String token = task.getResult().getToken();
+
+                        // Log and toast
+                        String msg = getString(R.string.msg_token_fmt, token);
+                        Log.d("firebase", msg);
+                        Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+                    }
+                });
 
         // https://guides.codepath.com/android/Shared-Element-Activity-Transition
         getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
@@ -149,44 +175,44 @@ public class MainActivity extends AppCompatActivity {
 
         verifyStoragePermissions(this);
 
-            mPackageManager = getPackageManager();
+        mPackageManager = getPackageManager();
 
-            mSort = findViewById(R.id.sort_group);
-            mSortName = findViewById(R.id.sort_name);
-            mSwitch = findViewById(R.id.enable_switch);
-            mSwitchText = findViewById(R.id.enable_text);
-            mAdapter = new MyAdapter();
-            mMicrophone = findViewById(R.id.microphone);
-            if (getMicrophoneAvailable()) {
-                mMicrophone.setText(R.string.microphoneON);
-            } else
-                mMicrophone.setText(R.string.microphoneOFF);
-            mAvailMem = findViewById(R.id.avail_mem);
-            //mGenralCpuUsage = findViewById(R.id.general_cpu);
-            mTotalMem =  findViewById(R.id.total_mem);
-            mList = findViewById(R.id.list);
-            mList.setLayoutManager(new LinearLayoutManager(this));
-            DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(mList.getContext(), DividerItemDecoration.VERTICAL);
-            dividerItemDecoration.setDrawable(getResources().getDrawable(R.drawable.divider, getTheme()));
-            mList.addItemDecoration(dividerItemDecoration);
-            mList.setAdapter(mAdapter);
+        mSort = findViewById(R.id.sort_group);
+        mSortName = findViewById(R.id.sort_name);
+        mSwitch = findViewById(R.id.enable_switch);
+        mSwitchText = findViewById(R.id.enable_text);
+        mAdapter = new MyAdapter();
+        mMicrophone = findViewById(R.id.microphone);
+        if (getMicrophoneAvailable()) {
+            mMicrophone.setText(R.string.microphoneON);
+        } else
+            mMicrophone.setText(R.string.microphoneOFF);
+        mAvailMem = findViewById(R.id.avail_mem);
+        //mGenralCpuUsage = findViewById(R.id.general_cpu);
+        mTotalMem = findViewById(R.id.total_mem);
+        mList = findViewById(R.id.list);
+        mList.setLayoutManager(new LinearLayoutManager(this));
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(mList.getContext(), DividerItemDecoration.VERTICAL);
+        dividerItemDecoration.setDrawable(getResources().getDrawable(R.drawable.divider, getTheme()));
+        mList.addItemDecoration(dividerItemDecoration);
+        mList.setAdapter(mAdapter);
 
-            initLayout();
-            initEvents();
-            initSpinner();
-            initSort();
+        initLayout();
+        initEvents();
+        initSpinner();
+        initSort();
 
-            if (DataManager.getInstance().hasPermission(getApplicationContext())) {
-                process();
-                startService(new Intent(this, AlarmService.class));
-            }
+        if (DataManager.getInstance().hasPermission(getApplicationContext())) {
+            process();
+            startService(new Intent(this, AlarmService.class));
+        }
 
-            if (savedInstanceState == null) {
-                // getSupportFragmentManager().beginTransaction()
-                //          .add(R.id.container, RunningProcessesFragment.newInstance())
-                //          .commit();
-            }
-            // Start the Parser service to get CPU and Memory info from /proc folder
+        if (savedInstanceState == null) {
+            // getSupportFragmentManager().beginTransaction()
+            //          .add(R.id.container, RunningProcessesFragment.newInstance())
+            //          .commit();
+        }
+        // Start the Parser service to get CPU and Memory info from /proc folder
       /*  Permissions.getPermissions(this, new String[]{
                 Manifest.permission.CAMERA,
                 Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -194,8 +220,8 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION}, 1);*/
 
-     //  HardwarePropertiesManager propertiesManager = (HardwarePropertiesManager)getApplicationContext().getSystemService(Context.HARDWARE_PROPERTIES_SERVICE);
-      //  CpuUsageInfo[] cpuUsages = propertiesManager.getCpuUsages();
+        //  HardwarePropertiesManager propertiesManager = (HardwarePropertiesManager)getApplicationContext().getSystemService(Context.HARDWARE_PROPERTIES_SERVICE);
+        //  CpuUsageInfo[] cpuUsages = propertiesManager.getCpuUsages();
 
         //for (CpuUsageInfo i : cpuUsages)
         //    Log.d(">>>>>>>>", ""+i.getTotal());
@@ -210,7 +236,6 @@ public class MainActivity extends AppCompatActivity {
      /*   mTotalMem.setText("Total memory: " + formater.format(memInfo.totalMem >> 10) + "KB   Threshold: "
                 + formater.format(memInfo.threshold >> 10) + "KB");
 */
-
 
 
     }
@@ -309,7 +334,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (!DataManager.getInstance().hasPermission(getApplicationContext())) {
-        //    mSwitch.setChecked(false);
+            //    mSwitch.setChecked(false);
         }
         LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, new IntentFilter("general"));
 
@@ -445,36 +470,15 @@ public class MainActivity extends AppCompatActivity {
                     getResources().getString(R.string.times_only))
             );
             holder.mDataUsage.setText(String.format(Locale.getDefault(), "Wifi:%s Data:%s", AppUtil.humanReadableByteCount(item.mWifi), AppUtil.humanReadableByteCount(item.mMobile)));
-
+            if (item.mWifi >= 100) {
+                Bundle bundle = new Bundle();
+                bundle.putString(FirebaseAnalytics.Param.ITEM_ID, item.mName);
+                bundle.putString(FirebaseAnalytics.Param.ITEM_NAME, "leakage wifi");
+                bundle.putString(FirebaseAnalytics.Param.CONTENT_TYPE, "String");
+                mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.VIEW_ITEM, bundle);
+            }
             holder.mMemoryUsage.setText(String.format(Locale.getDefault(), "| Memory %s", AppUtil.humanReadableByteCount(item.mMemory)));
 
-            FirebaseFirestore db = FirebaseFirestore.getInstance();
-            // Create a new user with a first and last name
-           // Map<String, Object> appdata = new HashMap<>();
-            //appdata.put("applabel",item.mName);
-           //appdata.put("id",item.pid);
-           // appdata.put("cpuusage",item.mUsageTime);
-           // appdata.put("date", new Timestamp(new Date()));
-           // appdata.put("wifi", item.mWifi);
-          //  appdata.put("mobile", item.mWifi);
-
-
-            // Add a new document with a generated ID
-            db.collection("apps").document(item.mName).collection("1")
-                    .document(""+new Timestamp(new Date()).getSeconds())
-                    .set(item)
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void aVoid) {
-                            Log.d("db", "DocumentSnapshot successfully written!");
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Log.w("db", "Error writing document", e);
-                        }
-                    });
 
             if (mTotal > 0) {
                 holder.mProgress.setProgress((int) (item.mUsageTime * 100 / mTotal));
@@ -510,7 +514,7 @@ public class MainActivity extends AppCompatActivity {
                 mUsage = itemView.findViewById(R.id.app_usage);
                 mTime = itemView.findViewById(R.id.app_time);
                 mDataUsage = itemView.findViewById(R.id.app_data_usage);
-                mMemoryUsage= itemView.findViewById(R.id.app_mem_usage);
+                mMemoryUsage = itemView.findViewById(R.id.app_mem_usage);
                 mIcon = itemView.findViewById(R.id.app_image);
                 mProgress = itemView.findViewById(R.id.progressBar);
                 itemView.setOnCreateContextMenuListener(this);
@@ -546,24 +550,25 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
     public static boolean getMicrophoneAvailable() {
         MediaRecorder recorder = new MediaRecorder();
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         recorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
-       // recorder.setOutputFile(new File(context.getCacheDir(), "MediaUtil#micAvailTestFile").getAbsolutePath());
+        // recorder.setOutputFile(new File(context.getCacheDir(), "MediaUtil#micAvailTestFile").getAbsolutePath());
         boolean available = true;
         try {
             recorder.prepare();
             recorder.start();
 
-        }
-        catch (Exception exception) {
+        } catch (Exception exception) {
             available = false;
         }
         recorder.release();
         return available;
     }
+
     @SuppressLint("StaticFieldLeak")
     class MyAsyncTask extends AsyncTask<Integer, Void, List<AppItem>> {
 
@@ -582,12 +587,53 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(List<AppItem> appItems) {
             mList.setVisibility(View.VISIBLE);
             mTotal = 0;
+
+
             for (AppItem item : appItems) {
+
+
                 if (item.mUsageTime <= 0) continue;
                 mTotal += item.mUsageTime;
                 item.mCanOpen = mPackageManager.getLaunchIntentForPackage(item.mPackageName) != null;
-                item.mMobile =  doInBackground(item.mPackageName)[1];
-                item.mWifi =  doInBackground(item.mPackageName)[0];
+                item.mMobile = doInBackground(item.mPackageName)[1];
+                item.mWifi = doInBackground(item.mPackageName)[0];
+
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                // Create a new user with a first and last name
+                TelephonyManager telephonyManager;
+                telephonyManager = (TelephonyManager) getSystemService(Context.
+                        TELEPHONY_SERVICE);
+                /*
+                 * getDeviceId() returns the unique device ID.
+                 * For example,the IMEI for GSM and the MEID or ESN for CDMA phones.
+                 */
+                if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    Activity#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for Activity#requestPermissions for more details.
+                    return;
+                }
+                String deviceId = telephonyManager.getDeviceId();
+                // Add a new document with a generated ID
+                db.collection("apps").document(item.mName).collection(""+deviceId)
+                        .document(""+new Timestamp(new Date()).getSeconds())
+                        .set(item)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                Log.d("db", "DocumentSnapshot successfully written!");
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Log.w("db", "Error writing document", e);
+                            }
+                        });
 
             }
             mSwitchText.setText(String.format(getResources().getString(R.string.total), AppUtil.formatMilliSeconds(mTotal)));
