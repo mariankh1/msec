@@ -4,16 +4,21 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.usage.NetworkStats;
+import android.app.usage.NetworkStatsManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import 	androidx.core.app.ActivityOptionsCompat;
 import androidx.appcompat.app.AlertDialog;
@@ -23,6 +28,11 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import 	androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import android.os.CpuUsageInfo;
+import android.os.HardwarePropertiesManager;
+import android.os.RemoteException;
+import android.telephony.TelephonyManager;
 import android.widget.TextView;
 import android.transition.Fade;
 import android.util.Log;
@@ -48,6 +58,7 @@ import android.widget.Toast;
 import com.app.malloc.malloc.GlideApp;
 import com.app.malloc.malloc.ListAdapter;
 import com.app.malloc.malloc.ProcFolderParser;
+import com.app.malloc.malloc.util.SortEnum;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 
@@ -55,8 +66,10 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.app.malloc.malloc.R;
 import com.app.malloc.malloc.data.AppItem;
@@ -66,6 +79,11 @@ import com.app.malloc.malloc.service.AlarmService;
 import com.app.malloc.malloc.service.AppService;
 import com.app.malloc.malloc.util.AppUtil;
 import com.app.malloc.malloc.util.PreferenceManager;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import 	android.media.MediaRecorder;
 
@@ -94,7 +112,8 @@ public class MainActivity extends AppCompatActivity {
             String[] generalInfo = intent.getStringExtra("cpuMem").split(ProcFolderParser.DELIMITER);
             Log.d(LOG_TAG, "received cpu  = " + generalInfo[0]);
           //  mGenralCpuUsage.setText("Total CPU usage: " + generalInfo[0] + "%");
-            mAvailMem.setText("Available Memory: " + generalInfo[1] + "KB, " + generalInfo[2] + "%");
+          //  mAvailMem.setText("Available Memory: " + generalInfo[1] + "KB, " + generalInfo[2] + "%");
+            mAvailMem.setText("Available Memory: " + generalInfo[1] + "KB");
         }
     };
     Boolean PermissionGranted = false;
@@ -118,21 +137,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(
-            int requestCode,
-            String permissions[],
-            int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode,permissions,grantResults);
-        if (grantResults.length > 0
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            PermissionGranted = true;
-            System.out.println("P granted");
-        } else {
-            PermissionGranted = false;
-            System.out.println("P not granted");
-        }
-    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -182,21 +187,34 @@ public class MainActivity extends AppCompatActivity {
                 //          .commit();
             }
             // Start the Parser service to get CPU and Memory info from /proc folder
-            Intent intent = new Intent(this, ProcFolderParser.class);
-            startService(intent);
-            // find all UI widgets
+      /*  Permissions.getPermissions(this, new String[]{
+                Manifest.permission.CAMERA,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION}, 1);*/
 
+     //  HardwarePropertiesManager propertiesManager = (HardwarePropertiesManager)getApplicationContext().getSystemService(Context.HARDWARE_PROPERTIES_SERVICE);
+      //  CpuUsageInfo[] cpuUsages = propertiesManager.getCpuUsages();
 
+        //for (CpuUsageInfo i : cpuUsages)
+        //    Log.d(">>>>>>>>", ""+i.getTotal());
+        Intent intent = new Intent(this, ProcFolderParser.class);
+        startService(intent);
+        // set text for total memory and threshold, because they are constant and we don't need
+        ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
+        am.getMemoryInfo(memInfo);
+        mTotalMem.setText("Total memory: " + formater.format(memInfo.totalMem >> 10) + "KB ");
 
-            // set text for total memory and threshold, because they are constant and we don't need
-            ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
-            am.getMemoryInfo(memInfo);
-            mTotalMem.setText("Total memory: " + formater.format(memInfo.totalMem >> 10) + "KB   Threshold: "
-                     + formater.format(memInfo.threshold >> 10) + "KB");
+     /*   mTotalMem.setText("Total memory: " + formater.format(memInfo.totalMem >> 10) + "KB   Threshold: "
+                + formater.format(memInfo.threshold >> 10) + "KB");
+*/
+
 
 
     }
+
     private void initLayout() {
         mSwipe = findViewById(R.id.swipe_refresh);
         if (DataManager.getInstance().hasPermission(getApplicationContext())) {
@@ -426,10 +444,37 @@ public class MainActivity extends AppCompatActivity {
                     item.mCount,
                     getResources().getString(R.string.times_only))
             );
-            holder.mDataUsage.setText(String.format(Locale.getDefault(), "%s", AppUtil.humanReadableByteCount(item.mMobile)));
+            holder.mDataUsage.setText(String.format(Locale.getDefault(), "Wifi:%s Data:%s", AppUtil.humanReadableByteCount(item.mWifi), AppUtil.humanReadableByteCount(item.mMobile)));
 
-            holder.mMemoryUsage.setText(String.format(Locale.getDefault(), "%s", AppUtil.humanReadableByteCount(item.mMemory)));
+            holder.mMemoryUsage.setText(String.format(Locale.getDefault(), "| Memory %s", AppUtil.humanReadableByteCount(item.mMemory)));
 
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            // Create a new user with a first and last name
+           // Map<String, Object> appdata = new HashMap<>();
+            //appdata.put("applabel",item.mName);
+           //appdata.put("id",item.pid);
+           // appdata.put("cpuusage",item.mUsageTime);
+           // appdata.put("date", new Timestamp(new Date()));
+           // appdata.put("wifi", item.mWifi);
+          //  appdata.put("mobile", item.mWifi);
+
+
+            // Add a new document with a generated ID
+            db.collection("apps").document(item.mName).collection("1")
+                    .document(""+new Timestamp(new Date()).getSeconds())
+                    .set(item)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d("db", "DocumentSnapshot successfully written!");
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.w("db", "Error writing document", e);
+                        }
+                    });
 
             if (mTotal > 0) {
                 holder.mProgress.setProgress((int) (item.mUsageTime * 100 / mTotal));
@@ -541,6 +586,9 @@ public class MainActivity extends AppCompatActivity {
                 if (item.mUsageTime <= 0) continue;
                 mTotal += item.mUsageTime;
                 item.mCanOpen = mPackageManager.getLaunchIntentForPackage(item.mPackageName) != null;
+                item.mMobile =  doInBackground(item.mPackageName)[1];
+                item.mWifi =  doInBackground(item.mPackageName)[0];
+
             }
             mSwitchText.setText(String.format(getResources().getString(R.string.total), AppUtil.formatMilliSeconds(mTotal)));
             mSwipe.setRefreshing(false);
@@ -553,6 +601,46 @@ public class MainActivity extends AppCompatActivity {
                 mMicrophone.setText(R.string.microphoneOFF);
         }
 
+        protected Long[] doInBackground( String mPackageName) {
+            long totalWifi = 0;
+            long totalMobile = 0;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                NetworkStatsManager networkStatsManager = (NetworkStatsManager) getSystemService(Context.NETWORK_STATS_SERVICE);
+                int targetUid = AppUtil.getAppUid(getPackageManager(), mPackageName);
+                long[] range = AppUtil.getTimeRange(SortEnum.getSortEnum(mDay));
+                try {
+                    if (networkStatsManager != null) {
+                        NetworkStats networkStats = networkStatsManager.querySummary(ConnectivityManager.TYPE_WIFI, "", range[0], range[1]);
+                        if (networkStats != null) {
+                            while (networkStats.hasNextBucket()) {
+                                NetworkStats.Bucket bucket = new NetworkStats.Bucket();
+                                networkStats.getNextBucket(bucket);
+                                if (bucket.getUid() == targetUid) {
+                                    totalWifi += bucket.getTxBytes() + bucket.getRxBytes();
+                                }
+                            }
+                        }
+                        TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+                        if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                            NetworkStats networkStatsM = networkStatsManager.querySummary(ConnectivityManager.TYPE_MOBILE, tm.getSubscriberId(), range[0], range[1]);
+                            if (networkStatsM != null) {
+                                while (networkStatsM.hasNextBucket()) {
+                                    NetworkStats.Bucket bucket = new NetworkStats.Bucket();
+                                    networkStatsM.getNextBucket(bucket);
+                                    if (bucket.getUid() == targetUid) {
+                                        totalMobile += bucket.getTxBytes() + bucket.getRxBytes();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+
+            }
+            return new Long[]{totalWifi, totalMobile};
+        }
     }
 
 

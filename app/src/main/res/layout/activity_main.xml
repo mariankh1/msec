@@ -65,6 +65,7 @@
                 android:paddingStart="2dp"
                 android:paddingEnd="2dp"
                 android:textColor="@color/colorGray" />
+
             <TextView
                 android:id="@+id/avail_mem"
                 android:layout_width="wrap_content"

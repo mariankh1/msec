@@ -23,7 +23,7 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
-        setContentView(R.layout.activity_splash);
+
         if (checkPermissions().size() == 0) {
             delayEnter();
         } else {

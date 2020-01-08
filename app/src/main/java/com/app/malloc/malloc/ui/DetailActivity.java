@@ -65,8 +65,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.app.malloc.malloc.GlideApp;
 import com.app.malloc.malloc.R;
@@ -76,6 +78,10 @@ import com.app.malloc.malloc.db.DbIgnoreExecutor;
 import com.app.malloc.malloc.util.AppUtil;
 import com.app.malloc.malloc.util.BitmapUtil;
 import com.app.malloc.malloc.util.SortEnum;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import static com.app.malloc.malloc.ProcFolderParser.formatter;
 
@@ -104,7 +110,7 @@ public class DetailActivity extends AppCompatActivity {
     private ActivityManager am;
 
 
-    /*
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -206,7 +212,7 @@ public class DetailActivity extends AppCompatActivity {
             });
         }
     }
-*/
+    /*
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

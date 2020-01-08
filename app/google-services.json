@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "459280626079",
+    "firebase_url": "https://malloc-1.firebaseio.com",
+    "project_id": "malloc-1",
+    "storage_bucket": "malloc-1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:459280626079:android:f4806ed841a018f4214daa",
+        "android_client_info": {
+          "package_name":"com.app.malloc.malloc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "459280626079-38rl8b8co5tkblljfji37b67rjlpon1p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATtvcPtwzZcvJdIBlZoNj-QcSoABlKqEU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "459280626079-38rl8b8co5tkblljfji37b67rjlpon1p.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

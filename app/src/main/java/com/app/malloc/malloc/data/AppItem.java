@@ -19,6 +19,7 @@ public class AppItem {
     public int mCount;
     public long mMobile;
     public boolean mCanOpen;
+    public Long mWifi;
     private boolean mIsSystem;
     public int mMemory;
     public UsageStats usageStats;
